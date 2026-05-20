@@ -34,7 +34,7 @@ def build_report(items, total_raw):
         icon, label = CATEGORY_META[key]
         lines.append(f"### {icon} {label}\n")
         for item in cat_items:
-            headline = item.get("headline", item.get("summary", item["title"]))
+            headline = item.get("headline", item.get("summary", item.get("title", "")))
             detail = item.get("detail", "")
             lines.append(f"**{headline}**")
             if detail:
