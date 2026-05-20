@@ -85,7 +85,8 @@ def analyze(items):
             summary_data = _summarize(item)
             if summary_data:
                 item["category"] = summary_data.get("category", "trend")
-                item["summary"] = summary_data.get("summary", "")
+                item["headline"] = summary_data.get("headline", item["title"])
+                item["detail"] = summary_data.get("detail", "")
                 scored.append(item)
 
         time.sleep(1)

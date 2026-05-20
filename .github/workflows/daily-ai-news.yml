@@ -31,6 +31,5 @@ jobs:
         run: |
           git config user.name "AI News Bot"
           git config user.email "bot@ai-news-monitor"
-          git add reports/
-          git diff --cached --quiet || git commit -m "AI 日报 $(TZ='Asia/Shanghai' date +%Y-%m-%d)"
-          git push
+          git add reports/ 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "AI 日报 $(TZ='Asia/Shanghai' date +%Y-%m-%d)" && git push)

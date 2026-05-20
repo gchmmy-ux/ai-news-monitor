@@ -21,7 +21,7 @@ def _today():
 
 
 def build_report(items, total_raw):
-    lines = [f"── AI 日报 · {_today()} ──────────────────────────"]
+    lines = [f"# AI 日报 · {_today()}\n"]
 
     grouped = {}
     for item in items:
@@ -32,13 +32,16 @@ def build_report(items, total_raw):
         if not cat_items:
             continue
         icon, label = CATEGORY_META[key]
-        lines.append(f"\n{icon} {label}\n")
+        lines.append(f"### {icon} {label}\n")
         for item in cat_items:
-            lines.append(item["summary"])
-            lines.append(f"——来源：{item['author']} · {item['platform']}\n")
+            headline = item.get("headline", item.get("summary", item["title"]))
+            detail = item.get("detail", "")
+            lines.append(f"**{headline}**")
+            if detail:
+                lines.append(f"{detail}")
+            lines.append(f"*{item['author']} · {item['platform']}*\n")
 
-    lines.append(f"共 {total_raw} 条原始信息 → 筛选后 {len(items)} 条")
-    lines.append("──────────────────────────────────────────────")
+    lines.append(f"---\n{total_raw} 条采集 → {len(items)} 条精选")
     return "\n".join(lines)
 
 
