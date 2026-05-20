@@ -1,33 +1,38 @@
 import json
 import time
 
-import google.generativeai as genai
+import requests
 
 from config import GEMINI_API_KEY, SCORE_PROMPT, SUMMARY_PROMPT, SCORE_THRESHOLD
 
-_model = None
-
-
-def _get_model():
-    global _model
-    if _model is None:
-        genai.configure(api_key=GEMINI_API_KEY)
-        _model = genai.GenerativeModel("gemini-2.0-flash")
-    return _model
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 
 def _call_gemini(prompt, retries=3):
-    model = _get_model()
     for i in range(retries):
         try:
-            resp = model.generate_content(prompt)
-            return resp.text.strip()
+            resp = requests.post(
+                API_URL,
+                params={"key": GEMINI_API_KEY},
+                json={"contents": [{"parts": [{"text": prompt}]}]},
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            if resp.status_code == 429:
+                wait = 2 ** (i + 1)
+                print(f"[Gemini] 速率限制，等待 {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"[Gemini] HTTP {resp.status_code}: {resp.text[:100]}")
+            return None
         except Exception as e:
             if i < retries - 1:
                 time.sleep(2 ** (i + 1))
             else:
                 print(f"[Gemini] 调用失败: {e}")
                 return None
+    return None
 
 
 def _parse_json(raw):

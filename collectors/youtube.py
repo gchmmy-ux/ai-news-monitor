@@ -14,7 +14,7 @@ def resolve_channel_id(handle):
     )
     if resp.status_code != 200:
         return None
-    match = re.search(r'"channelId":"(UC[^"]+)"', resp.text)
+    match = re.search(r'youtube\.com/channel/(UC[a-zA-Z0-9_-]+)', resp.text)
     return match.group(1) if match else None
 
 
@@ -36,12 +36,13 @@ def fetch_recent_videos(channel_id, hours=28):
     return videos
 
 
+_ytt = YouTubeTranscriptApi()
+
+
 def get_transcript(video_id):
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(
-            video_id, languages=["zh-Hans", "zh", "en"]
-        )
-        return " ".join(t["text"] for t in transcript)
+        result = _ytt.fetch(video_id, languages=["zh-Hans", "zh", "en"])
+        return " ".join(s.text for s in result.snippets)
     except Exception:
         return None
 
