@@ -1,0 +1,33 @@
+name: Daily AI News
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # UTC 00:00 = 北京时间 08:00
+  workflow_dispatch:
+
+jobs:
+  generate-daily-news:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate and push daily news
+        run: python main.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SERVER_CHAN_KEY: ${{ secrets.SERVER_CHAN_KEY }}
+
+      - name: Commit daily report
+        run: |
+          git config user.name "AI News Bot"
+          git config user.email "bot@ai-news-monitor"
+          git add reports/
+          git diff --cached --quiet || git commit -m "AI 日报 $(TZ='Asia/Shanghai' date +%Y-%m-%d)"
+          git push
