@@ -1,3 +1,5 @@
+import os
+
 import requests
 from datetime import datetime, timezone, timedelta
 
@@ -55,6 +57,7 @@ def push_to_wechat(title, content):
 
 
 def save_report(content):
+    os.makedirs("reports", exist_ok=True)
     path = f"reports/AI日报.{_today()}.md"
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
