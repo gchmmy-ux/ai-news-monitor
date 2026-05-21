@@ -8,7 +8,7 @@ from config import GEMINI_API_KEY, ANALYZE_PROMPT, SCORE_THRESHOLD
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 
-def _call_gemini(prompt, retries=5):
+def _call_gemini(prompt, retries=2):
     for i in range(retries):
         try:
             resp = requests.post(
@@ -20,7 +20,7 @@ def _call_gemini(prompt, retries=5):
             if resp.status_code == 200:
                 return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
             if resp.status_code in (429, 503):
-                wait = min(4 * (2 ** i), 60)
+                wait = 30 * (i + 1)
                 print(f"[Gemini] {resp.status_code}，等待 {wait}s...")
                 time.sleep(wait)
                 continue
@@ -28,7 +28,7 @@ def _call_gemini(prompt, retries=5):
             return None
         except Exception as e:
             if i < retries - 1:
-                time.sleep(4 * (2 ** i))
+                time.sleep(30)
             else:
                 print(f"[Gemini] 调用失败: {e}")
                 return None
