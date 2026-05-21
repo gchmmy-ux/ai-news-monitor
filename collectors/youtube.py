@@ -1,38 +1,75 @@
 import re
-import feedparser
+import json
 import requests
-from datetime import datetime, timedelta, timezone
 from youtube_transcript_api import YouTubeTranscriptApi
 
 
-def resolve_channel_id(handle):
-    url = f"https://www.youtube.com/@{handle}"
-    resp = requests.get(
-        url,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; ai-news-monitor/1.0)"},
-        timeout=15,
-    )
-    if resp.status_code != 200:
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
+def _parse_relative_hours(text):
+    """将 '5 days ago' 等相对时间转为小时数，无法解析返回 None。"""
+    if not text:
         return None
-    match = re.search(r'youtube\.com/channel/(UC[a-zA-Z0-9_-]+)', resp.text)
-    return match.group(1) if match else None
+    text = text.replace("Streamed ", "").replace("Premiered ", "").strip()
+    m = re.match(r"(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago", text)
+    if not m:
+        return None
+    n = int(m.group(1))
+    unit = m.group(2)
+    multipliers = {
+        "second": 1 / 3600, "minute": 1 / 60, "hour": 1,
+        "day": 24, "week": 168, "month": 720, "year": 8760,
+    }
+    return n * multipliers.get(unit, 0)
 
 
-def fetch_recent_videos(channel_id, hours=28):
-    feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    feed = feedparser.parse(feed_url)
+def fetch_recent_videos(handle, max_age_hours=28):
+    url = f"https://www.youtube.com/@{handle}/videos"
+    resp = requests.get(url, headers=_HEADERS, timeout=15)
+    if resp.status_code != 200:
+        return []
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    m = re.search(r"var ytInitialData\s*=\s*(\{.*?\});</script>", resp.text, re.DOTALL)
+    if not m:
+        return []
+
+    data = json.loads(m.group(1))
+    tabs = data.get("contents", {}).get("twoColumnBrowseResultsRenderer", {}).get("tabs", [])
+
     videos = []
-    for entry in feed.entries:
-        published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
-        if published > cutoff:
-            videos.append({
-                "video_id": entry.yt_videoid,
-                "title": entry.title,
-                "published": published.isoformat(),
-                "link": entry.link,
-            })
+    for tab in tabs:
+        grid = tab.get("tabRenderer", {}).get("content", {}).get("richGridRenderer", {})
+        if not grid:
+            continue
+        for item in grid.get("contents", []):
+            lvm = item.get("richItemRenderer", {}).get("content", {}).get("lockupViewModel", {})
+            if not lvm or lvm.get("contentType") != "LOCKUP_CONTENT_TYPE_VIDEO":
+                continue
+
+            video_id = lvm.get("contentId", "")
+            meta = lvm.get("metadata", {}).get("lockupMetadataViewModel", {})
+            title = meta.get("title", {}).get("content", "")
+
+            parts = (meta.get("metadata", {}).get("contentMetadataViewModel", {})
+                     .get("metadataRows", [{}])[0].get("metadataParts", []))
+            time_text = parts[1].get("text", {}).get("content", "") if len(parts) > 1 else ""
+
+            age_hours = _parse_relative_hours(time_text)
+            if age_hours is not None and age_hours <= max_age_hours:
+                videos.append({
+                    "video_id": video_id,
+                    "title": title,
+                    "published": time_text,
+                    "link": f"https://www.youtube.com/watch?v={video_id}",
+                })
+        break
+
     return videos
 
 
@@ -50,12 +87,7 @@ def get_transcript(video_id):
 def collect(channels):
     results = []
     for ch in channels:
-        channel_id = resolve_channel_id(ch["handle"])
-        if not channel_id:
-            print(f"[YouTube] 无法解析频道: {ch['name']} (@{ch['handle']})")
-            continue
-
-        videos = fetch_recent_videos(channel_id)
+        videos = fetch_recent_videos(ch["handle"])
         for video in videos:
             transcript = get_transcript(video["video_id"])
             results.append({
