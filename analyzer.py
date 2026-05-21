@@ -82,7 +82,7 @@ def analyze(items):
         print(f"  [{score}分] {item['title'][:50]} — {reason}")
 
         if score >= SCORE_THRESHOLD:
-            time.sleep(3)
+            time.sleep(10)
             summary_data = _summarize(item)
             if summary_data:
                 item["category"] = summary_data.get("category", "trend")
@@ -90,6 +90,6 @@ def analyze(items):
                 item["detail"] = summary_data.get("detail", "")
                 scored.append(item)
 
-        time.sleep(3)
+        time.sleep(10)
 
     return scored
