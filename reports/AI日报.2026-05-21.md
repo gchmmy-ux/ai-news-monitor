@@ -1,10 +1,10 @@
 # AI 日报 · 2026-05-21
 
-### 🔴 重大发布
+### 📊 行业动向
 
-**Abridge借助GPT-5.5驱动临床AI笔记**
-**Abridge** 整合 **GPT-5.5**，用于生成临床AI笔记。
-*OpenAI · YouTube*
+**Google DeepMind发布WeatherNext，提升风暴预警能力**
+**Google DeepMind**发布**WeatherNext**模型，实现历史性风暴提前预警。
+*Google DeepMind · YouTube*
 
 ---
 7 条采集 → 1 条精选
