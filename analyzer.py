@@ -3,7 +3,7 @@ import time
 
 import requests
 
-from config import GEMINI_API_KEY, SCORE_PROMPT, SUMMARY_PROMPT, SCORE_THRESHOLD
+from config import GEMINI_API_KEY, ANALYZE_PROMPT, SCORE_THRESHOLD
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
@@ -42,53 +42,40 @@ def _parse_json(raw):
     return json.loads(cleaned.strip())
 
 
-def _score(item):
-    content = item["content"][:3000]
-    prompt = SCORE_PROMPT.format(
-        title=item["title"], author=item["author"], content=content
-    )
-    raw = _call_gemini(prompt)
-    if not raw:
-        return 0, "调用失败"
-    try:
-        data = _parse_json(raw)
-        return data.get("score", 0), data.get("reason", "")
-    except (json.JSONDecodeError, ValueError):
-        print(f"[Gemini] 打分解析失败: {raw[:100]}")
-        return 0, "解析失败"
-
-
-def _summarize(item):
-    content = item["content"][:3000]
-    prompt = SUMMARY_PROMPT.format(
-        title=item["title"], author=item["author"], content=content
-    )
-    raw = _call_gemini(prompt)
-    if not raw:
-        return None
-    try:
-        return _parse_json(raw)
-    except (json.JSONDecodeError, ValueError):
-        print(f"[Gemini] 摘要解析失败: {raw[:100]}")
-        return None
-
-
 def analyze(items):
     scored = []
     for item in items:
-        score, reason = _score(item)
+        content = item["content"][:3000]
+        prompt = ANALYZE_PROMPT.format(
+            title=item["title"], author=item["author"], content=content
+        )
+        raw = _call_gemini(prompt)
+
+        if not raw:
+            item["score"] = 0
+            print(f"  [0分] {item['title'][:50]} — 调用失败")
+            time.sleep(10)
+            continue
+
+        try:
+            data = _parse_json(raw)
+        except (json.JSONDecodeError, ValueError):
+            item["score"] = 0
+            print(f"  [0分] {item['title'][:50]} — 解析失败: {raw[:80]}")
+            time.sleep(10)
+            continue
+
+        score = data.get("score", 0)
+        reason = data.get("reason", "")
         item["score"] = score
         item["score_reason"] = reason
         print(f"  [{score}分] {item['title'][:50]} — {reason}")
 
-        if score >= SCORE_THRESHOLD:
-            time.sleep(10)
-            summary_data = _summarize(item)
-            if summary_data:
-                item["category"] = summary_data.get("category", "trend")
-                item["headline"] = summary_data.get("headline", item["title"])
-                item["detail"] = summary_data.get("detail", "")
-                scored.append(item)
+        if score >= SCORE_THRESHOLD and data.get("headline"):
+            item["category"] = data.get("category", "trend")
+            item["headline"] = data.get("headline", item["title"])
+            item["detail"] = data.get("detail", "")
+            scored.append(item)
 
         time.sleep(10)
 
