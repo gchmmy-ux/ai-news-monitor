@@ -47,7 +47,8 @@ def analyze(items):
     for item in items:
         content = item["content"][:3000]
         prompt = ANALYZE_PROMPT.format(
-            title=item["title"], author=item["author"], content=content
+            title=item["title"], author=item["author"],
+            platform=item["platform"], content=content,
         )
         raw = _call_gemini(prompt)
 

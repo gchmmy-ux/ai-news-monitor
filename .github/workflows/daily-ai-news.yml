@@ -26,6 +26,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SERVER_CHAN_KEY: ${{ secrets.SERVER_CHAN_KEY }}
+          BILIBILI_SESSDATA: ${{ secrets.BILIBILI_SESSDATA }}
 
       - name: Commit daily report
         run: |
