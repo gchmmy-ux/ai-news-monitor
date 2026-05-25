@@ -28,6 +28,7 @@ jobs:
           SERVER_CHAN_KEY: ${{ secrets.SERVER_CHAN_KEY }}
           BILIBILI_SESSDATA: ${{ secrets.BILIBILI_SESSDATA }}
           DOUYIN_COOKIE: ${{ secrets.DOUYIN_COOKIE }}
+          TWITTER_COOKIE: ${{ secrets.TWITTER_COOKIE }}
 
       - name: Commit daily report
         run: |
