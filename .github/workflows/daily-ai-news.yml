@@ -27,6 +27,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SERVER_CHAN_KEY: ${{ secrets.SERVER_CHAN_KEY }}
           BILIBILI_SESSDATA: ${{ secrets.BILIBILI_SESSDATA }}
+          DOUYIN_COOKIE: ${{ secrets.DOUYIN_COOKIE }}
 
       - name: Commit daily report
         run: |

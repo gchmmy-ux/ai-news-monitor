@@ -3,6 +3,7 @@ import os
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 SERVER_CHAN_KEY = os.environ.get("SERVER_CHAN_KEY", "")
 BILIBILI_SESSDATA = os.environ.get("BILIBILI_SESSDATA", "")
+DOUYIN_COOKIE = os.environ.get("DOUYIN_COOKIE", "")
 
 SCORE_THRESHOLD = 6
 
@@ -20,6 +21,13 @@ BILIBILI_UP_HOSTS = [
     {"name": "程序员鱼皮", "uid": 12890453},
     {"name": "ai798Lab", "uid": 2094023919},
     {"name": "圣徒城的小诺", "uid": 150452545},
+]
+
+DOUYIN_BLOGGERS = [
+    {"name": "秋芝2046", "sec_uid": "MS4wLjABAAAAwbbVuf1W2DdgRe0xCa0oxg1ZIHbzuiTzyjq3NcOVgBuu6qIidYlMYqbL3ZFY2swu"},
+    {"name": "量子位", "sec_uid": "MS4wLjABAAAA1bL6-89P1h_ODlkg17TXKneHuPfHijf8ogsmg6gPVAQ"},
+    {"name": "差评君", "sec_uid": "MS4wLjABAAAAoioyA1wed-aUyuGnSSbUEcjLerCyVtbSCvAxym9ZOWUTEPEdaPbHUlNI4dHOhdMU"},
+    {"name": "林亦LYi", "sec_uid": "MS4wLjABAAAAtSFk_pO6mcT_31WOWK60mRDvh_0Op6UvYT9dm77bCT20dADpgjU8ccRfj-VgY-qU"},
 ]
 
 ANALYZE_PROMPT = """你是 AI 行业资讯编辑。读者是企业老板，不是程序员——用大白话写摘要，像跟朋友聊天一样说清楚发生了什么。
