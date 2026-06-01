@@ -72,10 +72,8 @@ def analyze(items):
         item["score_reason"] = reason
         print(f"  [{score}分] {item['title'][:50]} — {reason}")
 
-        if score >= SCORE_THRESHOLD and data.get("headline"):
-            item["category"] = data.get("category", "trend")
-            item["headline"] = data.get("headline", item["title"])
-            item["detail"] = data.get("detail", "")
+        if score >= SCORE_THRESHOLD and data.get("summary"):
+            item["summary"] = data.get("summary", "")
             scored.append(item)
 
         time.sleep(10)

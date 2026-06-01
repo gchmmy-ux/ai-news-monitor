@@ -5,14 +5,6 @@ from datetime import datetime, timezone, timedelta
 
 from config import SERVER_CHAN_KEY
 
-CATEGORY_META = {
-    "breaking": ("🔴", "重大发布"),
-    "update": ("📦", "产品更新"),
-    "trend": ("📊", "行业动向"),
-    "practice": ("🛠", "实操与落地"),
-}
-CATEGORY_ORDER = ["breaking", "update", "trend", "practice"]
-
 _beijing = timezone(timedelta(hours=8))
 
 
@@ -21,27 +13,14 @@ def _today():
 
 
 def build_report(items, total_raw):
-    lines = [f"# AI 日报 · {_today()}\n"]
+    lines = [f"AI 日报 · {_today()}\n"]
 
-    grouped = {}
     for item in items:
-        grouped.setdefault(item.get("category", "trend"), []).append(item)
+        summary = item.get("summary", item.get("title", ""))
+        source = f"{item['author']} · {item['platform']}"
+        lines.append(f"• {summary}（{source}）\n")
 
-    for key in CATEGORY_ORDER:
-        cat_items = grouped.get(key)
-        if not cat_items:
-            continue
-        icon, label = CATEGORY_META[key]
-        lines.append(f"### {icon} {label}\n")
-        for item in cat_items:
-            headline = item.get("headline", item.get("summary", item.get("title", "")))
-            detail = item.get("detail", "")
-            lines.append(f"**{headline}**")
-            if detail:
-                lines.append(f"{detail}")
-            lines.append(f"*{item['author']} · {item['platform']}*\n")
-
-    lines.append(f"---\n{total_raw} 条采集 → {len(items)} 条精选")
+    lines.append(f"{len(items)} 条精选 / {total_raw} 条采集")
     return "\n".join(lines)
 
 
