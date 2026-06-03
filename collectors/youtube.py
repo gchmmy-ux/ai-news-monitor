@@ -1,5 +1,7 @@
 import re
 import json
+import time
+import urllib.parse
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -101,4 +103,86 @@ def collect(channels):
             })
         print(f"[YouTube] {ch['name']}: {len(videos)} 新视频")
 
+    return results
+
+
+def _search_videos(keyword, max_age_hours=48):
+    query = urllib.parse.quote(keyword)
+    url = f"https://www.youtube.com/results?search_query={query}"
+    resp = requests.get(url, headers=_HEADERS, timeout=15)
+    if resp.status_code != 200:
+        return []
+
+    m = re.search(r"var ytInitialData\s*=\s*(\{.*?\});</script>", resp.text, re.DOTALL)
+    if not m:
+        return []
+
+    data = json.loads(m.group(1))
+    sections = (data.get("contents", {})
+                .get("twoColumnSearchResultsRenderer", {})
+                .get("primaryContents", {})
+                .get("sectionListRenderer", {})
+                .get("contents", []))
+
+    videos = []
+    for section in sections:
+        items = section.get("itemSectionRenderer", {}).get("contents", [])
+        for item in items:
+            vr = item.get("videoRenderer")
+            if not vr:
+                continue
+
+            video_id = vr.get("videoId", "")
+            title_runs = vr.get("title", {}).get("runs", [])
+            title = title_runs[0].get("text", "") if title_runs else ""
+
+            time_text = vr.get("publishedTimeText", {}).get("simpleText", "")
+            channel_runs = vr.get("ownerText", {}).get("runs", [])
+            channel = channel_runs[0].get("text", "") if channel_runs else ""
+
+            age_hours = _parse_relative_hours(time_text)
+            if age_hours is not None and age_hours <= max_age_hours:
+                videos.append({
+                    "video_id": video_id,
+                    "title": title,
+                    "published": time_text,
+                    "channel": channel,
+                    "link": f"https://www.youtube.com/watch?v={video_id}",
+                })
+            if len(videos) >= 5:
+                break
+        if len(videos) >= 5:
+            break
+
+    return videos
+
+
+def _is_negative(title, neg_kws):
+    t = title.lower()
+    return any(kw.lower() in t for kw in neg_kws)
+
+
+def search_collect(keywords, negative_keywords=None):
+    results = []
+    seen_ids = set()
+    for kw in keywords:
+        videos = _search_videos(kw)
+        for video in videos:
+            vid = video["video_id"]
+            if vid in seen_ids:
+                continue
+            if negative_keywords and _is_negative(video["title"], negative_keywords):
+                continue
+            seen_ids.add(vid)
+            results.append({
+                "platform": "YouTube",
+                "author": video.get("channel", ""),
+                "title": video["title"],
+                "content": video["title"],
+                "link": video["link"],
+                "published": video["published"],
+                "has_transcript": False,
+            })
+        print(f"[YouTube 搜索] '{kw}': {len(videos)} 结果")
+        time.sleep(2)
     return results

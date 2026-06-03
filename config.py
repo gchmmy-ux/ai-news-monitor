@@ -8,6 +8,24 @@ TWITTER_COOKIE = os.environ.get("TWITTER_COOKIE", "")
 
 SCORE_THRESHOLD = 6
 
+YOUTUBE_SEARCH_KEYWORDS = [
+    "Claude AI", "GPT-5", "Gemini AI", "DeepSeek",
+    "AI news today", "AI breakthrough",
+    "Claude Code skills",
+]
+
+DOUYIN_SEARCH_KEYWORDS = [
+    "AI最新资讯", "AI日报",
+    "DeepSeek", "豆包", "Claude",
+    "大模型",
+]
+
+NEGATIVE_KEYWORDS = [
+    "教程", "tutorial", "how to", "变现", "副业", "带货",
+    "工具推荐", "赚钱", "引流", "涨粉", "getting started",
+    "保姆级", "手把手", "make money", "side hustle",
+]
+
 YOUTUBE_CHANNELS = [
     {"name": "Matt Wolfe", "handle": "mreflow"},
     {"name": "OpenAI", "handle": "OpenAI"},

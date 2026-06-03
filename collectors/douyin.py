@@ -20,6 +20,58 @@ class _DouyinClient:
         self._s.headers.update(_HEADERS)
         self._s.headers["Cookie"] = DOUYIN_COOKIE
 
+    def search_videos(self, keyword, max_age_hours=48):
+        try:
+            resp = self._s.get(
+                f"{_API_BASE}/general/search/single/",
+                params={
+                    "device_platform": "webapp",
+                    "aid": "6383",
+                    "keyword": keyword,
+                    "search_channel": "aweme_general",
+                    "sort_type": "0",
+                    "publish_time": "1",
+                    "filter_duration": "0",
+                    "offset": "0",
+                    "count": "20",
+                    "version_code": "170400",
+                    "version_name": "17.4.0",
+                },
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+            if data.get("status_code") != 0:
+                return []
+        except Exception as e:
+            print(f"  [抖音搜索] '{keyword}' 请求失败: {e}")
+            return []
+
+        cutoff = time.time() - max_age_hours * 3600
+        videos = []
+        for item in data.get("data", []):
+            aweme_info = item.get("aweme_info", {})
+            if not aweme_info:
+                continue
+            create_time = aweme_info.get("create_time", 0)
+            if create_time < cutoff:
+                continue
+            aweme_id = aweme_info.get("aweme_id", "")
+            desc = aweme_info.get("desc", "")
+            author_info = aweme_info.get("author", {})
+            nickname = author_info.get("nickname", "")
+            videos.append({
+                "aweme_id": aweme_id,
+                "desc": desc,
+                "create_time": create_time,
+                "author": nickname,
+                "link": f"https://www.douyin.com/video/{aweme_id}",
+            })
+            if len(videos) >= 5:
+                break
+        return videos
+
     def get_recent_videos(self, sec_uid, max_age_hours=28):
         try:
             resp = self._s.get(
@@ -92,6 +144,55 @@ def collect(bloggers):
                 "has_transcript": False,
             })
         print(f"[抖音] {blogger['name']}: {len(videos)} 新视频")
+        time.sleep(2)
+
+    return results
+
+
+def _is_negative(title, neg_kws):
+    t = title.lower()
+    return any(kw.lower() in t for kw in neg_kws)
+
+
+def search_collect(keywords, negative_keywords=None):
+    if not DOUYIN_COOKIE:
+        print("[抖音搜索] DOUYIN_COOKIE 未配置，跳过")
+        return []
+
+    try:
+        client = _DouyinClient()
+    except Exception as e:
+        print(f"[抖音搜索] 初始化失败: {e}")
+        return []
+
+    results = []
+    seen_ids = set()
+    for kw in keywords:
+        videos = client.search_videos(kw)
+        for video in videos:
+            aid = video["aweme_id"]
+            if aid in seen_ids:
+                continue
+            desc = video["desc"]
+            title = desc.split("\n")[0].strip() or desc[:50]
+            if negative_keywords and _is_negative(title, negative_keywords):
+                continue
+            seen_ids.add(aid)
+            content = " ".join(
+                part for part in desc.split() if not part.startswith("#")
+            )
+            results.append({
+                "platform": "抖音",
+                "author": video.get("author", ""),
+                "title": title,
+                "content": content or desc,
+                "link": video["link"],
+                "published": time.strftime(
+                    "%Y-%m-%d", time.localtime(video["create_time"])
+                ),
+                "has_transcript": False,
+            })
+        print(f"[抖音搜索] '{kw}': {len(videos)} 结果")
         time.sleep(2)
 
     return results
