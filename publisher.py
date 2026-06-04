@@ -30,11 +30,22 @@ def push_to_wechat(title, content):
         return False
 
     url = f"https://sctapi.ftqq.com/{SERVER_CHAN_KEY}.send"
-    resp = requests.post(url, data={"title": title, "desp": content}, timeout=15)
-    if resp.status_code == 200 and resp.json().get("code") == 0:
-        print("[推送] 微信推送成功")
-        return True
-    print(f"[推送] 失败: {resp.text[:200]}")
+    for attempt in range(3):
+        try:
+            resp = requests.post(url, data={"title": title, "desp": content}, timeout=30)
+            if resp.status_code == 200 and resp.json().get("code") == 0:
+                print("[推送] 微信推送成功")
+                return True
+            print(f"[推送] 失败: {resp.text[:200]}")
+            return False
+        except requests.exceptions.ConnectionError as e:
+            if attempt < 2:
+                import time
+                print(f"[推送] 连接失败，{10 * (attempt + 1)}s 后重试...")
+                time.sleep(10 * (attempt + 1))
+            else:
+                print(f"[推送] 连接失败（已重试 3 次）: {e}")
+                return False
     return False
 
 
@@ -53,5 +64,5 @@ def publish(items, total_raw):
         return
 
     report = build_report(items, total_raw)
-    push_to_wechat(f"AI 日报 · {_today()}", report)
     save_report(report)
+    push_to_wechat(f"AI 日报 · {_today()}", report)
